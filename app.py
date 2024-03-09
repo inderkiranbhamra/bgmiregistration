@@ -43,7 +43,12 @@ def generate_auth_link(token, data):
 
 
 # Route to handle form submission and send authentication email
-@app.route('/submit', methods=['POST'])
+@app.route('/')
+def index():
+    return 'API is working'
+
+
+@app.route('/submit', methods=['GET', 'POST'])
 def send_email():
     if request.method == 'POST':
         data = request.get_json()
@@ -74,6 +79,8 @@ def send_email():
         yag.send(to=email, subject=subject, contents=body)
 
         return redirect(url_for('email_sent'))
+    else:
+        return 'Submit endpoint. Use POST method to submit data.'
 
 
 # Route to inform user that email has been sent
@@ -114,3 +121,4 @@ def verify(token):
             return jsonify({'message': 'Invalid or expired verification link.'}), 400
     else:
         return jsonify({'message': 'No token provided.'}), 400
+
