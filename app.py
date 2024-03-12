@@ -1,124 +1,155 @@
-from flask import Flask, request, jsonify, redirect, url_for, send_file
-from flask_cors import CORS  # Import CORS
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
 import yagmail
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import mysql.connector
 import secrets
 import os
+from urllib.parse import urlencode
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for your Flask app
+CORS(app)
 
-# Set the secret key for the session
 app.secret_key = 'inderkiran@24'
 
+# MySQL database configuration
+DB_HOST = 'sql6.freesqldatabase.com'
+DB_NAME = 'sql6690830'
+DB_USER = 'sql6690830'
+DB_PASSWORD = 'elmCpSuTy2'
+
+# Connect to the MySQL database
+conn = mysql.connector.connect(host=DB_HOST, database=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+cursor = conn.cursor()
+
+# Create the registrations table if it doesn't exist
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS BGMIregistrations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        team_name VARCHAR(255),
+        college_name VARCHAR(255),
+        leader_name VARCHAR(255),
+        leader_ign VARCHAR(255),
+        leader_discord_tag VARCHAR(255),
+        leader_rank VARCHAR(255),
+        leader_contact VARCHAR(255),
+        leader_email VARCHAR(255),
+        p2_name VARCHAR(255),
+        p2_ign VARCHAR(255),
+        p2_discord_tag VARCHAR(255),
+        p2_rank VARCHAR(255),
+        p2_contact VARCHAR(255),
+        p2_email VARCHAR(255),
+        p3_name VARCHAR(255),
+        p3_ign VARCHAR(255),
+        p3_discord_tag VARCHAR(255),
+        p3_rank VARCHAR(255),
+        p3_contact VARCHAR(255),
+        p3_email VARCHAR(255),
+        p4_name VARCHAR(255),
+        p4_ign VARCHAR(255),
+        p4_discord_tag VARCHAR(255),
+        p4_rank VARCHAR(255),
+        p4_contact VARCHAR(255),
+        p4_email VARCHAR(255)
+    )
+''')
+conn.commit()
+
 # Email configuration
-sender_email = 'hackoverflow@cumail.in'  # replace with your email
-app_password = 'lgde lflp hmgu krrd'  # replace with your generated app password
+sender_email = 'hackoverflow@cumail.in'
+app_password = 'lgde lflp hmgu krrd'
 
-# Google Sheets configuration
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-credentials = ServiceAccountCredentials.from_json_keyfile_name('bgmi-registration-e1d0ccd3b338.json', scope)
-gc = gspread.authorize(credentials)
-spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1Y02mNph9lvPE-LmoJ2Ks6BZ4T84_HPF-O1toDIqYe3w/edit#gid=0'
-sh = gc.open_by_url(spreadsheet_url)
-worksheet = sh.get_worksheet(2)  # Assuming you are working with the first sheet
-
-# Dictionary to store email verification tokens
 email_tokens = {}
 
 
-# Function to generate a random token
 def generate_token():
     return secrets.token_hex(16)
 
 
-# Function to generate an authentication link with token
 def generate_auth_link(token, data):
-    # Construct the authentication link with modified parameters
     auth_link = f'https://bgmiregistration.vercel.app/verify/{token}?'
-    for key, value in data.items():
-        auth_link += f'{key}={value}&'
-    return auth_link[:-1]
+    auth_link += urlencode(data)
+    return auth_link
 
 
-# Route to handle form submission and send authentication email
+def check_duplicate(data):
+    # Check for duplicates in the MySQL database across all fields
+    cursor.execute("SELECT * FROM BGMIregistrations WHERE leader_ign = %s OR leader_discord_tag = %s OR leader_email = %s OR leader_contact = %s OR team_name = %s OR p2_ign = %s OR p2_discord_tag = %s OR p2_email = %s OR p2_contact = %s OR p2_name = %s OR p3_ign = %s OR p3_discord_tag = %s OR p3_email = %s OR p3_contact = %s OR p3_name = %s OR p4_ign = %s OR p4_discord_tag = %s OR p4_email = %s OR p4_contact = %s OR p4_name = %s",
+                   (data['leader_ign'], data['leader_discord_tag'], data['leader_email'], data['leader_contact'], data['team_name'], data['p2_ign'], data['p2_discord_tag'], data['p2_email'], data['p2_contact'], data['p2_name'], data['p3_ign'], data['p3_discord_tag'], data['p3_email'], data['p3_contact'], data['p3_name'], data['p4_ign'], data['p4_discord_tag'], data['p4_email'], data['p4_contact'], data['p4_name']))
+    result = cursor.fetchone()
+    if result:
+        return True
+    else:
+        # Check for repeated values within the received data
+        all_values = [data['leader_email'], data['team_name'], data['leader_contact'], data['leader_ign'], data['leader_discord_tag'],
+                      data['p2_email'], data['p2_ign'], data['p2_contact'], data['p2_discord_tag'], data['p2_name'],
+                      data['p3_email'], data['p3_ign'], data['p3_contact'], data['p3_discord_tag'], data['p3_name'],
+                      data['p4_email'], data['p4_ign'], data['p4_contact'], data['p4_discord_tag'], data['p4_name']]
+        unique_values = set(all_values)
+        if len(unique_values) != len(all_values):
+            return True  # If there are repeated values within the received data, return True indicating duplicates
+
+        # Check for uniqueness of email, IGN, team name, contact, and Discord tag across the entire database
+        cursor.execute("SELECT * FROM BGMIregistrations WHERE leader_email = %s OR team_name = %s OR leader_contact = %s OR leader_ign = %s OR leader_discord_tag = %s OR p2_email = %s OR p2_ign = %s OR p2_contact = %s OR p2_discord_tag = %s OR p2_name = %s OR p3_email = %s OR p3_ign = %s OR p3_contact = %s OR p3_discord_tag = %s OR p3_name = %s OR p4_email = %s OR p4_ign = %s OR p4_contact = %s OR p4_discord_tag = %s OR p4_name = %s",
+                       (data['leader_email'], data['team_name'], data['leader_contact'], data['leader_ign'], data['leader_discord_tag'], data['p2_email'], data['p2_ign'], data['p2_contact'], data['p2_discord_tag'], data['p2_name'], data['p3_email'], data['p3_ign'], data['p3_contact'], data['p3_discord_tag'], data['p3_name'], data['p4_email'], data['p4_ign'], data['p4_contact'], data['p4_discord_tag'], data['p4_name']))
+        result = cursor.fetchone()
+        if result:
+            return True
+    return False
+
+
+
 @app.route('/')
 def index():
     return 'API is working'
 
 
-@app.route('/submit', methods=['GET', 'POST'])
+@app.route('/submit', methods=['POST'])
 def send_email():
-    if request.method == 'POST':
-        data = request.get_json()
-        token = generate_token()
-        email = data['leader_email']  # Assuming leader's email is used for verification
-        email_tokens[email] = token
+    data = request.get_json()
+    token = generate_token()
 
-        # Construct authentication link with all required parameters
-        auth_link = generate_auth_link(token, data)
-        subject = 'Authentication Link'
-        body = f'''
-                <html>
-                <head>
-                    <title>{subject}</title>
-                </head>
-                <body>
-                    <h2>{subject}</h2>
-                    <p>Click the button below to authenticate:</p>
-                    <a href="{auth_link}" >Authenticate</a>
-                </body>
-                </html>
-                '''
+    if check_duplicate(data):
+        return jsonify({'message': 'Duplicate entry detected. IGN, Discord tag, email, or phone number is already registered.'}), 400
 
-        # Create yagmail SMTP client
-        yag = yagmail.SMTP(sender_email, app_password)
+    email = data['leader_email']
+    email_tokens[email] = token
 
-        # Send the email
-        yag.send(to=email, subject=subject, contents=body)
+    auth_link = generate_auth_link(token, data)
+    subject = 'Authentication Link'
+    body = f'''
+            <html>
+            <head>
+                <title>{subject}</title>
+            </head>
+            <body>
+                <h2>{subject}</h2>
+                <p>Click the button below to authenticate:</p>
+                <a href="{auth_link}" >Authenticate</a>
+            </body>
+            </html>
+            '''
 
-        return redirect(url_for('email_sent'))
-    else:
-        return 'Submit endpoint. Use POST method to submit data.'
+    yag = yagmail.SMTP(sender_email, app_password)
+    yag.send(to=email, subject=subject, contents=body)
+
+    return jsonify({'message': 'Email sent successfully.'})
 
 
-# Route to inform user that email has been sent
-@app.route('/email_sent')
-def email_sent():
-    return send_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'email_sent.html'))
-
-
-# Route to handle verification
 @app.route('/verify/<token>', methods=['GET'])
 def verify(token):
-    if token:
-        # Check if the token exists in email_tokens
-        if token in email_tokens.values():
-            # Get the email associated with the token
-            email = [key for key, value in email_tokens.items() if value == token][0]
+    if token in email_tokens.values():
+        email = [key for key, value in email_tokens.items() if value == token][0]
+        data = request.args.to_dict()
 
-            # Retrieve data from the query parameters
-            data = request.args.to_dict()
+        # Insert data into the MySQL database
+        cursor.execute("INSERT INTO BGMIregistrations (team_name, college_name, leader_name, leader_ign, leader_discord_tag, leader_rank, leader_contact, leader_email, p2_name, p2_ign, p2_discord_tag, p2_rank, p2_contact, p2_email, p3_name, p3_ign, p3_discord_tag, p3_rank, p3_contact, p3_email, p4_name, p4_ign, p4_discord_tag, p4_rank, p4_contact, p4_email) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                       (data['team_name'], data['college_name'], data['leader_name'], data['leader_ign'], data['leader_discord_tag'], data['leader_rank'], data['leader_contact'], data['leader_email'], data['p2_name'], data['p2_ign'], data['p2_discord_tag'], data['p2_rank'], data['p2_contact'], data['p2_email'], data['p3_name'], data['p3_ign'], data['p3_discord_tag'], data['p3_rank'], data['p3_contact'], data['p3_email'], data['p4_name'], data['p4_ign'], data['p4_discord_tag'], data['p4_rank'], data['p4_contact'], data['p4_email']))
+        conn.commit()
 
-            # Check if all required parameters are present
-            required_fields = ['team_name', 'college_name', 'leader_name', 'leader_ign', 'leader_discord_tag',
-                               'leader_rank', 'leader_contact', 'leader_email', 'p2_name', 'p2_ign', 'p2_discord_tag',
-                               'p2_rank', 'p2_contact', 'p2_email', 'p3_name', 'p3_ign', 'p3_discord_tag', 'p3_rank',
-                               'p3_contact', 'p3_email', 'p4_name', 'p4_ign', 'p4_discord_tag', 'p4_rank',
-                               'p4_contact', 'p4_email']
-
-            if all(field in data for field in required_fields):
-                # Append new data to Google Sheets
-                new_row = [data[field] for field in required_fields]
-                worksheet.append_row(new_row)
-                # Remove token from dictionary after verification
-                del email_tokens[email]
-                return 'Authentication successful. You are now registered for BGMI in gameathon.'
-            else:
-                return jsonify({'message': 'Missing parameters in the verification link.'}), 400
-        else:
-            return jsonify({'message': 'Invalid or expired verification link.'}), 400
+        del email_tokens[email]
+        return 'Authentication successful. You are now registered for Valorant in gameathon.'
     else:
-        return jsonify({'message': 'No token provided.'}), 400
+        return jsonify({'message': 'Invalid or expired verification link.'}), 400
+
 
