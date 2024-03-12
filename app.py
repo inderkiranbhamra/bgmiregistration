@@ -110,7 +110,7 @@ def send_email():
     token = generate_token()
 
     if check_duplicate(data):
-        return jsonify({'message': 'Duplicate entry detected. IGN, Discord tag, email, or phone number is already registered.'}), 400
+        return jsonify({'message': 'Duplicate entry detected.'}), 400
 
     email = data['leader_email']
     email_tokens[email] = token
