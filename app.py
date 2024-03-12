@@ -148,7 +148,7 @@ def verify(token):
         conn.commit()
 
         del email_tokens[email]
-        return 'Authentication successful. You are now registered for Valorant in gameathon.'
+        return 'Authentication successful. You are now registered for BGMI in gameathon.'
     else:
         return jsonify({'message': 'Invalid or expired verification link.'}), 400
 
