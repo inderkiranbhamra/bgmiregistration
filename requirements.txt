@@ -1,4 +1,4 @@
-Flask~=3.0.2
-Flask-CORS~=3.1.1
-yagmail~=0.15.293
+Flask==3.0.0
+Flask-CORS==4.0.0
+yagmail==0.15.293
 mysql-connector-python~=8.0.28
