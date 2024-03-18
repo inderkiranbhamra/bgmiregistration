@@ -24,33 +24,33 @@ cursor = conn.cursor()
 # conn.commit()
 # cursor.execute("DROP TABLE IF EXISTS UniqueIGN")
 # conn.commit()
-# cursor.execute('''CREATE TABLE IF NOT EXISTS BGMIregistrations (
-#     team_name VARCHAR(255) PRIMARY KEY,
-#     college_name VARCHAR(255),
-#     leader_name VARCHAR(255),
-#     leader_ign VARCHAR(255) UNIQUE,
-#     leader_game_id VARCHAR(255) UNIQUE,
-#     leader_id_no VARCHAR(255) UNIQUE,
-#     leader_contact VARCHAR(255) UNIQUE,
-#     leader_email VARCHAR(255) UNIQUE,
-#     p2_name VARCHAR(255),
-#     p2_ign VARCHAR(255) UNIQUE,
-#     p2_game_id VARCHAR(255) UNIQUE,
-#     p2_id_no VARCHAR(255) UNIQUE,
-#     p2_contact VARCHAR(255) UNIQUE,
-#     p3_name VARCHAR(255),
-#     p3_ign VARCHAR(255) UNIQUE,
-#     p3_game_id VARCHAR(255) UNIQUE,
-#     p3_id_no VARCHAR(255) UNIQUE,
-#     p3_contact VARCHAR(255) UNIQUE,
-#     p4_name VARCHAR(255),
-#     p4_ign VARCHAR(255) UNIQUE,
-#     p4_game_id VARCHAR(255) UNIQUE,
-#     p4_id_no VARCHAR(255) UNIQUE,
-#     p4_contact VARCHAR(255) UNIQUE
-# );
-# ''')
-# conn.commit()
+cursor.execute('''CREATE TABLE IF NOT EXISTS BGMIregistrations (
+    team_name VARCHAR(255) PRIMARY KEY,
+    college_name VARCHAR(255),
+    leader_name VARCHAR(255),
+    leader_ign VARCHAR(255) UNIQUE,
+    leader_game_id VARCHAR(255) UNIQUE,
+    leader_id_no VARCHAR(255) UNIQUE,
+    leader_contact VARCHAR(255) UNIQUE,
+    leader_email VARCHAR(255) UNIQUE,
+    p2_name VARCHAR(255),
+    p2_ign VARCHAR(255) UNIQUE,
+    p2_game_id VARCHAR(255) UNIQUE,
+    p2_id_no VARCHAR(255) UNIQUE,
+    p2_contact VARCHAR(255) UNIQUE,
+    p3_name VARCHAR(255),
+    p3_ign VARCHAR(255) UNIQUE,
+    p3_game_id VARCHAR(255) UNIQUE,
+    p3_id_no VARCHAR(255) UNIQUE,
+    p3_contact VARCHAR(255) UNIQUE,
+    p4_name VARCHAR(255),
+    p4_ign VARCHAR(255) UNIQUE,
+    p4_game_id VARCHAR(255) UNIQUE,
+    p4_id_no VARCHAR(255) UNIQUE,
+    p4_contact VARCHAR(255) UNIQUE
+);
+''')
+conn.commit()
 
 # Email configuration
 sender_email = 'hackoverflow@cumail.in'
@@ -206,5 +206,4 @@ def verify(token):
             return jsonify({'message': 'Error inserting data into database.'}), 500
     else:
         return jsonify({'message': 'Invalid or expired verification link.'}), 400
-
 
